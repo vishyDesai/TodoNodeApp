@@ -1,8 +1,9 @@
 var {mongoose} = require('./db/mongoose');
 var {Todo} = require('./models/Todo');
 
+const _ = require('lodash');
 const express = require('express');
-var bodyParser = require('body-parser');
+const bodyParser = require('body-parser');
 var {ObjectID} = require('mongodb');
 
 var app = express();
@@ -97,5 +98,41 @@ app.delete('/todos/:id', (req, res) => {
       errorCode: 400,
       errorMessage: {err}
     });
+  });
+});
+
+//PATCH : /todos/:id - Update a specific Todo
+
+app.patch('/todos/:id', (req,res) => {
+  var id = req.params.id;
+  var body = _.pick(req.body, ['task','completed']);
+
+  if(!ObjectID.isValid(id)) {
+    return res.status(400).send({
+      errorCode: 400,
+      errorMessage: 'Not a valid ID'
+    });
+  }
+
+  if(_.isBoolean(body.completed) && body.completed) {
+    body.completedAt = new Date().getTime();
+  } else {
+    body.completedAt = null;
+    body.complete = false;
+  }
+
+  Todo.findByIdAndUpdate(id, {$set: body}, {new: true}).then((todo) => {
+    if(!todo) {
+      return res.status(404).send({
+        errorCode: 404,
+        errorMessage: 'ID to update not found'
+      });
+    }
+    res.status(200).send({todo});
+  }).catch((error) => {
+    res.status(400).send({
+      errorCode:400,
+      errorMessage: {error}
+    })
   });
 });
