@@ -7,9 +7,9 @@ var {ObjectID} = require('mongodb');
 
 var app = express();
 app.use(bodyParser.json());
-
-app.listen(3000, () => {
-  console.log('Started on Port 3000');
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Started on Port ${port}`);
 });
 
 //POST : /todos - Create Todo
@@ -63,7 +63,6 @@ app.get('/todos/:id', (req,res)=>{
         errorMessage: 'Data not found'
       });
     }
-
     res.status(200).send(JSON.stringify(todo,undefined, 2));
   }).catch((err) => {
     res.status(400).send({
@@ -71,5 +70,32 @@ app.get('/todos/:id', (req,res)=>{
       errorMessage: {err}
     });
   });
+});
 
+//DELETE : /todos/:id - Delete specific Todo
+
+app.delete('/todos/:id', (req, res) => {
+  var id=req.params.id;
+
+  if(!ObjectID.isValid(id)) {
+    return res.status(400).send({
+      errorCode: 400,
+      errorMessage: 'Invalid Object ID'
+    });
+  }
+
+  Todo.findByIdAndRemove(id).then((todo) => {
+    if(!todo) {
+      return res.status(404).send({
+        errorCode: 404,
+        errorMessage: 'ID to be deleted not found'
+      });
+    }
+    res.status(200).send({todo});
+  }).catch((err) => {
+    res.status(400).send({
+      errorCode: 400,
+      errorMessage: {err}
+    });
+  });
 });
